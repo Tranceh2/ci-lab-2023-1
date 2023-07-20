@@ -6,13 +6,9 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: CI Lab 2023-1
+name: Maven Package
 
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+on: push
 
 jobs:
   build:
@@ -29,8 +25,22 @@ jobs:
       with:
         java-version: '11'
         distribution: 'temurin'
-        cache: maven
-        server-id: github
-        settings-path: ${{ github.workspace }}
+        server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
+        settings-path: ${{ github.workspace }} # location for the settings.xml file
+
     - name: Build with Maven
       run: mvn -B verify --file pom.xml
+      
+    - name: Create staging directory
+      run: mkdir staging && cp target/*.jar staging
+    
+    - name: Store artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: Package
+        path: staging
+
+    - name: Publish to GitHub Packages Apache Maven
+      run: mvn deploy -s .m2/settings.xml
+      env:
+         GITHUB_TOKEN: ${{ github.TOKEN }}
